@@ -1,0 +1,199 @@
+---
+title: "Project Report"
+author: "Mustafa Ekrem Körlü - Furkan Berk Efe"
+date: "22 05 2021"
+output: pdf_document
+---
+#Project Goal and Project Data
+
+## Project Goal
+
+ <font size="4px"> The main purpose of our project is to develop an estimation about when the Covid-19 pandemic, which started in 2019 and was named "global epidemic" in March 2020, preventing all humanity from their normal lives and causing some material and moral damage, will end in countries with a population of over 3 million worldwide.
+
+## Project Data
+
+In our initial data, all data related to predicting the end of the Covid-19 pandemic are available, except for the number of patients recovering, such as the total number of cases, the number of daily cases, the total number of deaths, and the number of daily deaths. Our project data can be accessed at "https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv".
+
+##Actions Taken
+
+
+We added the libraries which we'll need in code.
+```{r}
+library(tidyverse)
+library(readxl)
+library(readr)
+library(rmarkdown)
+library(magrittr)
+```
+
+Importing data from web to keep it updated.
+
+```{r}
+totalcases <- read.csv("https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv")
+
+```
+Getting ready the data for cleaning process.
+```{r}
+ totalcases %<>%
+  select( "location","date", "total_cases", "new_cases", "total_deaths", "new_deaths", "total_vaccinations", "people_vaccinated", "new_vaccinations", "population") %>% 
+  rename(Country = "location", Date="date") %>% 
+  rename(TotalCases="total_cases",NewCases= "new_cases",TotalDeath = "total_deaths", NewDeath = "new_deaths", TotalVaccinations = "total_vaccinations", PeopleVaccinated = "people_vaccinated", NewVaccination = "new_vaccinations", Population = "population")
+
+```
+Our assumption about our model is that; if a country's population is less than 3 millions we can't reach a suitable result on that country.
+
+And we checked that Countries about the data it announced is more than 365 to eliminate inappropriate datas.
+
+```{r}
+totalcases <-  filter(totalcases, Population>3000000)
+
+
+countries <- unique(totalcases$Country)
+x <- c()
+sum(totalcases$Country==countries)
+for(i in countries){
+  
+  if(sum(totalcases$Country==i)>=365){
+    x <- c(x,i)
+  }
+
+}
+```
+
+Bu döngüyle sadece türkmenistanın bu sınırlar dışında kaldığı anlaşılmıştır
+
+```{r}
+
+totalcases <- totalcases[-(totalcases$Country=='Turkmenistan'),]
+
+
+
+```
+
+
+
+
+
+
+```
+Turkmenistan is not valid country to process.
+
+
+#totalcases tablosuna ihtiyacımız olacak değerler eklenecektir
+
+Active cases value is needed to go on process. We accept that, an detected case'll be recovered after 10 days. (Turkish Government's decision has been referenced about that matter.)
+So we need cases last 10 years and then we delete the deaths last 10 days and reach the data of active cases.
+
+
+Because the code below requires too much processing time, for this report, we only executed Turkish Case.
+#```{r}
+#totalcases$tendays <- c(0*length(totalcases$Country))
+
+
+
+#for(j in countries){
+#for(i in 1:(length(totalcases$Country==j)-10)){
+    
+#    totalcases[(i+10),11] <- sum(totalcases[totalcases$Country==j,4][i:(i+10)])
+# }
+  
+  
+#}
+
+
+
+
+Here is the code we only reached turkey's last 10 day cases to find active cases each day.
+
+
+totalcases$tendays <- c(0*length(totalcases$Country))
+
+
+
+
+  for (i in 1:((length(totalcases$Country=='Turkey')-10)))
+      
+      {
+    
+    totalcases[i+62090,11] <- sum(totalcases[i+62080,4][i:(i+10)])
+  }
+  
+  
+
+
+
+```^^^^
+^^Bu chunk uzun süre çalışıp sonuç vermediğinden aktif vaka sayısı Farklı Şekilde hesaplanacaktır.
+
+```
+#Son 10 gündeki vaka sayısı bize ölümler dahil aktif vaka sayısını verdiğinden bu değerden son 10 gündeki ölümleri  çıkarmamız bize aktif vaka sayısını verecektir. (Türkiye Cumhuriyetinde Covid tespit edilen hastaların 10 günde iyileştiği varsayımı kabul edilmiştir.)
+
+
+```{r}
+totaldatastur <- totalcases[totalcases$Country=='Turkey',]
+
+view(totaldatastur)
+
+Turkeydata <- read.csv("TURCOVID19_AcikVeri_TRGunlukVerileri - TURCOVID19_TR_Verileri")
+
+
+totalrecovered <- c(0,0,Turkeydata$Toplam_iyilesen)
+
+totaldatastur$Recovered <- totalrecovered
+
+totaldatastur$ActiveCasesara <- totaldatastur$TotalCases - totaldatastur$TotalDeath
+
+totaldatastur$ActiveCases <- totaldatastur$ActiveCasesara - totaldatastur$Recovered
+
+totaldatastur[is.na(totaldatastur)] = 0
+
+```
+
+
+totaldatastur <- mutate( totaldatastur$ActiveCases = totaldatastur$TotalCases - totaldatastur$TotalDeaths -  totaldatastur$Recovered)
+
+
+Some of visualisations of our dataframe.
+```{r}
+totalcasestur <- totalcases[totalcases$Country=='Turkey',c(2,3)]
+
+plot(totalcasestur$TotalCases,type='l')
+```
+
+```{r}
+totaldeathstur <- totalcases[totalcases$Country=='Turkey',c(2,5)]
+
+plot(totaldeathstur$TotalDeath)
+```
+
+```{r}
+totaldeathstur <- totalcases[totalcases$Country=='Turkey',c(2,5)]
+
+plot(totaldeathstur$TotalDeath, type = 'l')
+```
+
+
+
+
+
+##The work done 
+
+
+In our first project proposal, we worked on data such as incidents and deaths that were experienced up to that time. However, in the last case, we will share it by adding all the data until 22.05.2021, which is the date we will share it with you. The reason we reshaped the data set is to ensure that the results we will obtain are the most accurate. Although we wanted to reach the result with the linear or multi regression method at the beginning, in the last case we were unsure about reaching the result with the SIR model with the vaccination data added. Our reason for being indecisive is that, besides the easy application of linear regression, we are concerned about the small size of its accuracy and we think that we have difficulties in applying the SIR model, however correct it is.
+
+
+##Future Work to planned
+
+1) Add the columns Active Cases and Immuned People
+2) Equalise Active Cases = last 10 days cases cummulative summation - last 10 days deaths
+3) Immuned People = Total Cases - Total Death - Active Cases + Vaccinated People
+4) Apply SIR model to our dataset.
+5) Look at the relation between daily cases and immuned people.
+6) Look at the relation between daily cases and active cases.
+7) Find out the daily cases approximation using immuned people and active cases
+8) Compare SIR model and Regression model for our data.
+
+
+
+
+
